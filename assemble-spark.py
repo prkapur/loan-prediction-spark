@@ -5,24 +5,24 @@
 """
 
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructField, StructType, StringType, IntegerType, FloatType
+from pyspark.sql.types import StructField, StructType, StringType, IntegerType, FloatType, LongType
 
-#When Loading IntegerType, the schema returns null
-#Need Type Conversion for types other than String
+#When Loading id as IntegerType, the schema returns null
+#Load id as LongType and the schema load works
 
 spark = SparkSession.builder.appName("Assemble").getOrCreate()
 
 data_schema_acquisition = [
-StructField("id",IntegerType(),True),
+StructField("id",LongType(),True),
 StructField("channel",StringType(),False),
 StructField("seller",StringType(),False),
-StructField("interest_rate",StringType(),False),
-StructField("balance",StringType(),False),
-StructField("loan_term",StringType(),False),
+StructField("interest_rate",FloatType(),False),
+StructField("balance",LongType(),False),
+StructField("loan_term",IntegerType(),False),
 StructField("origination_date",StringType(),False),
 StructField("first_payment_date",StringType(),False),
-StructField("ltv",StringType(),False),
-StructField("cltv",StringType(),False),
+StructField("ltv",IntegerType(),False),
+StructField("cltv",IntegerType(),False),
 StructField("borrower_count",IntegerType(),False),
 StructField("dti",IntegerType(),False),
 StructField("borrower_credit_score",IntegerType(),False),
@@ -41,9 +41,41 @@ StructField("co_borrower_credit_score",StringType(),False)
 final_structure_acquisition  = StructType(fields=data_schema_acquisition)
 
 #df = spark.read.text("data/Acquisition_2012Q1.txt",schema=final_structure_performance,delimiter"|")
-lines = spark.read.option("sep","|").csv("data/Acquisition_2012Q1.txt",header="False", nullValue = "NA", schema=final_structure_acquisition)
+lines_acq = spark.read.option("sep","|").csv("data/Acquisition_2012Q1.txt",header="False", nullValue = "NA", schema=final_structure_acquisition)
+lines_acq.show(10)
 
-lines.show(10)
+data_schema_performance = [
+    StructField("id",LongType(),False),
+    StructField("reporting_period",StringType(),True),
+    StructField("servicer_name",StringType(),True),
+    StructField("interest_rate",StringType(),False),
+    StructField("balance",LongType(),False),
+    StructField("loan_age",IntegerType(),False),
+    StructField("months_to_maturity",IntegerType(),False),
+    StructField("msa",StringType(),False),
+    StructField("delinquency_status",StringType(),False),
+    StructField("modification_flag",StringType(),False),
+    StructField("zero_balance_code",StringType(),False),
+    StructField("zero_balance_date",StringType(),False),
+    StructField("last_paid_installment_date",StringType(),False),
+    StructField("foreclosure_date",StringType(),False),
+    StructField("disposition_date",StringType(),False),
+    StructField("foreclosure_costs",StringType(),False),
+    StructField("property_repair_costs",StringType(),False),
+    StructField("recovery_costs",StringType(),False),
+    StructField("misc_costs",StringType(),False),
+    StructField("tax_costs",StringType(),False),
+    StructField("sale_proceeds",StringType(),False),
+    StructField("credit_enhancement_proceeds",StringType(),False),
+    StructField("repurchase_proceeds",StringType(),False),
+    StructField("other_foreclosure_proceeds",StringType(),False),
+    StructField("non_interest_bearing_balance",StringType(),False),
+    StructField("principal_forgiveness_balance",StringType(),False),
+]
 
-#data_schema_performance
-#final_structure_performance
+lines_acq = spark.read.option("sep","|").csv("data/Acquisition_2012Q1.txt",header="False", nullValue = "NA", schema=final_structure_acquisition)
+lines_acq.show(10)
+
+final_structure_performance = StructType(fields=data_schema_performance)
+lines_per = spark.read.option("sep","|").csv("data/Performance_2012Q1.txt",header="False", nullValue = "NA",schema=final_structure_performance)
+lines_per.show(10)
