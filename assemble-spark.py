@@ -1,10 +1,10 @@
 """
 1. Combine all the Performance files into one file
 2. Combine all the Acquisition files into one file
-
+3. Write the 2 output files as Performance.csv and Acquisition.csv
 """
 
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, SQLContext, HiveContext
 from pyspark.sql.types import StructField, StructType, StringType, IntegerType, FloatType, LongType
 
 #When Loading id as IntegerType, the schema returns null
@@ -74,8 +74,26 @@ data_schema_performance = [
 ]
 
 lines_acq = spark.read.option("sep","|").csv("data/Acquisition_2012Q1.txt",header="False", nullValue = "NA", schema=final_structure_acquisition)
+# Show top 10 rows from Acquisition Files
 lines_acq.show(10)
 
 final_structure_performance = StructType(fields=data_schema_performance)
 lines_per = spark.read.option("sep","|").csv("data/Performance_2012Q1.txt",header="False", nullValue = "NA",schema=final_structure_performance)
+# Show top 10 rows from Performance Files
 lines_per.show(10)
+
+print("Selecting the necessary columns only from performance table")
+print(type(lines_per))
+# Select All lines where foreclosure is not null - To Do
+results = lines_per.select("id","foreclosure_date")#.show()
+
+
+# The format is df.select("col1","col2")
+# lines_per_select = lines_per.select("id","foreclosure_date").show()
+
+#creating a temporary performance_table
+#lines_per.createOrReplaceTempView("performance_table")
+#results = spark.sql("select id,foreclosure_date from performance_table where foreclosure_date is not null")#.show()
+results.write.option("header","true").csv("C:///Users/Pranav/Desktop/Development/Pranav/loan-prediction-spark/Performance.csv/Performance.csv")
+
+
