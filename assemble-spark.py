@@ -2,10 +2,13 @@
 1. Combine all the Performance files into one file
 2. Combine all the Acquisition files into one file
 3. Write the 2 output files as Performance.csv and Acquisition.csv
+
+filter, select, groupby
 """
 
 from pyspark.sql import SparkSession, SQLContext, HiveContext
 from pyspark.sql.types import StructField, StructType, StringType, IntegerType, FloatType, LongType
+from pyspark.sql.functions import *
 
 #When Loading id as IntegerType, the schema returns null
 #Load id as LongType and the schema load works
@@ -38,11 +41,6 @@ StructField("product_type",StringType(),False),
 StructField("co_borrower_credit_score",StringType(),False)
 ]
 
-final_structure_acquisition  = StructType(fields=data_schema_acquisition)
-
-#df = spark.read.text("data/Acquisition_2012Q1.txt",schema=final_structure_performance,delimiter"|")
-lines_acq = spark.read.option("sep","|").csv("data/Acquisition_2012Q1.txt",header="False", nullValue = "NA", schema=final_structure_acquisition)
-lines_acq.show(10)
 
 data_schema_performance = [
     StructField("id",LongType(),False),
@@ -73,27 +71,49 @@ data_schema_performance = [
     StructField("principal_forgiveness_balance",StringType(),False),
 ]
 
+final_structure_acquisition  = StructType(fields=data_schema_acquisition)
 lines_acq = spark.read.option("sep","|").csv("data/Acquisition_2012Q1.txt",header="False", nullValue = "NA", schema=final_structure_acquisition)
-# Show top 10 rows from Acquisition Files
-lines_acq.show(10)
+#lines_acq.show(10)
 
 final_structure_performance = StructType(fields=data_schema_performance)
 lines_per = spark.read.option("sep","|").csv("data/Performance_2012Q1.txt",header="False", nullValue = "NA",schema=final_structure_performance)
-# Show top 10 rows from Performance Files
-lines_per.show(10)
+#lines_per.show(10)
 
 print("Selecting the necessary columns only from performance table")
-print(type(lines_per))
-# Select All lines where foreclosure is not null - To Do
-results = lines_per.select("id","foreclosure_date")#.show()
 
+# Select All lines where foreclosure is not null
 
-# The format is df.select("col1","col2")
-# lines_per_select = lines_per.select("id","foreclosure_date").show()
+acquisition = lines_acq
+performance = lines_per.select("id","foreclosure_date").filter("foreclosure_date IS NOT NULL")
 
 #creating a temporary performance_table
 #lines_per.createOrReplaceTempView("performance_table")
 #results = spark.sql("select id,foreclosure_date from performance_table where foreclosure_date is not null")#.show()
-results.write.option("header","true").csv("C:///Users/Pranav/Desktop/Development/Pranav/loan-prediction-spark/Performance.csv/Performance.csv")
 
+#acquisition.coalesce(1).write.option("header","true").csv("Acquisition.csv")
+#performance.coalesce(1).write.option("header","true").csv("Performance.csv")
+
+#Join the two dataframes i.e performance and acquisition
+
+print("Printing the joined dataframes")
+
+df1 = acquisition.alias('df1')
+df2 = performance.alias('df2')
+joinedDataSet = df1.join(df2, df1.id == df2.id, how='left').select("df1.*","df2.foreclosure_date")
+
+#joinedDataset.coalesce(1).write.option("header","true").csv("JoinedData.csv")
+
+#joinedDataset.write.partitionBy("id").parquet("train")
+
+#rdd = joinedDataset.rdd.map(list)
+#print(rdd.collect())
+
+joinedDataSet = joinedDataSet.withColumn("month",split("foreclosure_date","/").getItem(0))
+joinedDataSet = joinedDataSet.withColumn("year",split("foreclosure_date","/").getItem(1))
+
+joinedDataSet.show()
+
+# split_col = spark.sql.functions.split(joinedDataSet['foreclosure_date'], '/')
+# joinedDataSet = joinedDataSet.withColumn('NAME1', split_col.getItem(0))
+# joinedDataSet = joinedDataSet.withColumn('NAME2', split_col.getItem(1))
 
