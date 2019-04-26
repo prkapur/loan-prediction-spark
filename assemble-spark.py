@@ -41,7 +41,6 @@ StructField("product_type",StringType(),False),
 StructField("co_borrower_credit_score",StringType(),False)
 ]
 
-
 data_schema_performance = [
     StructField("id",LongType(),False),
     StructField("reporting_period",StringType(),True),
@@ -72,15 +71,12 @@ data_schema_performance = [
 ]
 
 final_structure_acquisition  = StructType(fields=data_schema_acquisition)
-lines_acq = spark.read.option("sep","|").csv("data/Acquisition_2012Q1.txt",header="False", nullValue = "NA", schema=final_structure_acquisition)
+lines_acq = spark.read.option("sep","|").csv("data/Acquisition_*.txt",header="False", nullValue = "NA", schema=final_structure_acquisition)
 #lines_acq.show(10)
 
 final_structure_performance = StructType(fields=data_schema_performance)
-lines_per = spark.read.option("sep","|").csv("data/Performance_2012Q1.txt",header="False", nullValue = "NA",schema=final_structure_performance)
+lines_per = spark.read.option("sep","|").csv("data/Performance_*.txt",header="False", nullValue = "NA",schema=final_structure_performance)
 #lines_per.show(10)
-
-print("Selecting the necessary columns only from performance table")
-
 # Select All lines where foreclosure is not null
 
 acquisition = lines_acq
@@ -90,30 +86,7 @@ performance = lines_per.select("id","foreclosure_date").filter("foreclosure_date
 #lines_per.createOrReplaceTempView("performance_table")
 #results = spark.sql("select id,foreclosure_date from performance_table where foreclosure_date is not null")#.show()
 
-#acquisition.coalesce(1).write.option("header","true").csv("Acquisition.csv")
-#performance.coalesce(1).write.option("header","true").csv("Performance.csv")
+acquisition.coalesce(1).write.option("header","true").csv("Acquisition.csv")
+performance.coalesce(1).write.option("header","true").csv("Performance.csv")
 
 #Join the two dataframes i.e performance and acquisition
-
-print("Printing the joined dataframes")
-
-df1 = acquisition.alias('df1')
-df2 = performance.alias('df2')
-joinedDataSet = df1.join(df2, df1.id == df2.id, how='left').select("df1.*","df2.foreclosure_date")
-
-#joinedDataset.coalesce(1).write.option("header","true").csv("JoinedData.csv")
-
-#joinedDataset.write.partitionBy("id").parquet("train")
-
-#rdd = joinedDataset.rdd.map(list)
-#print(rdd.collect())
-
-joinedDataSet = joinedDataSet.withColumn("month",split("foreclosure_date","/").getItem(0))
-joinedDataSet = joinedDataSet.withColumn("year",split("foreclosure_date","/").getItem(1))
-
-joinedDataSet.show()
-
-# split_col = spark.sql.functions.split(joinedDataSet['foreclosure_date'], '/')
-# joinedDataSet = joinedDataSet.withColumn('NAME1', split_col.getItem(0))
-# joinedDataSet = joinedDataSet.withColumn('NAME2', split_col.getItem(1))
-
