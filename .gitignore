@@ -2,4 +2,6 @@
 data/
 processed/
 sample/
+Acquisition/
+Performance/
 *.csv

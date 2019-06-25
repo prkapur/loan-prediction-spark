@@ -4,6 +4,9 @@
 3. Write the 2 output files as Performance.csv and Acquisition.csv
 
 filter, select, groupby
+
+# Write a config file to create the Spark Job
+
 """
 
 from pyspark.sql import SparkSession, SQLContext, HiveContext
@@ -86,7 +89,5 @@ if __name__ == "__main__":
     acquisition = lines_acq
     performance = lines_per.select("id","foreclosure_date").filter("foreclosure_date IS NOT NULL")
 
-    acquisition.coalesce(1).write.option("header","true").csv("Acquisition/")
-    performance.coalesce(1).write.option("header","true").csv("Performance/")
-
-    SparkSession.stop()
+    acquisition.coalesce(1).write.option("header","true").csv("processed/Acquisition/")
+    performance.coalesce(1).write.option("header","true").csv("processed/Performance/")

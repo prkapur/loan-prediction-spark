@@ -5,7 +5,6 @@ from pyspark.ml import Pipeline
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.sql.types import *
 
-
 spark = SparkSession.builder.appName("Predict").getOrCreate()
 
 df = spark.read.load("parquet/*.parquet", sep = ",", inferSchema="True")
